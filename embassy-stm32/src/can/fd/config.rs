@@ -1,7 +1,7 @@
 //! Configuration for FDCAN Module
 // Note: This file is copied and modified from fdcan crate by Richard Meadows
 
-use core::num::{NonZeroU8, NonZeroU16};
+use core::{cmp::min, num::{NonZeroU8, NonZeroU16}};
 
 /// Configures the bit timings.
 ///
@@ -64,8 +64,6 @@ impl Default for NominalBitTiming {
 /// This is not used when frame_transmit is set to anything other than AllowFdCanAndBRS.
 #[derive(Clone, Copy, Debug)]
 pub struct DataBitTiming {
-    /// Tranceiver Delay Compensation
-    pub transceiver_delay_compensation: bool,
     ///  The value by which the oscillator frequency is divided to generate the bit time quanta. The bit
     ///  time is built up from a multiple of this quanta. Valid values for the Baud Rate Prescaler are 1
     ///  to 31.
@@ -76,14 +74,14 @@ pub struct DataBitTiming {
     pub seg2: NonZeroU8,
     /// Must always be smaller than DTSEG2, valid values are 1 to 15.
     pub sync_jump_width: NonZeroU8,
+    /// Transceiver Delay Compensation enabled
+    pub transceiver_delay_compensation: bool,
+    /// Transmitter delay compensation offset, valid values are 0 to 63.
+    pub tdc_offset: u8,
+    /// Transmitter delay compensation filter window length, valid values are 0 to 63.
+    pub tdc_filter_window_length: u8,
 }
 impl DataBitTiming {
-    // #[inline]
-    // fn tdc(&self) -> u8 {
-    //     let tsd = self.transceiver_delay_compensation as u8;
-    //     //TODO: stm32g4 does not export the TDC field
-    //     todo!()
-    // }
     #[inline]
     pub(crate) fn dbrp(&self) -> u8 {
         (u16::from(self.prescaler) & 0x001F) as u8
@@ -100,6 +98,14 @@ impl DataBitTiming {
     pub(crate) fn dsjw(&self) -> u8 {
         u8::from(self.sync_jump_width) & 0x0F
     }
+    #[inline]
+    pub(crate) fn tdco(&self) -> u8 {
+        min(self.tdc_offset, 0x3F)
+    }
+    #[inline]
+    pub(crate) fn tdcf(&self) -> u8 {
+        min(self.tdc_filter_window_length, 0x3F)
+    }
 }
 
 impl Default for DataBitTiming {
@@ -108,11 +114,13 @@ impl Default for DataBitTiming {
         // Kernel Clock 8MHz, Bit rate: 500kbit/s. Corresponds to a DBTP
         // register value of 0x0000_0A33
         Self {
-            transceiver_delay_compensation: false,
             prescaler: NonZeroU16::new(1).unwrap(),
             seg1: NonZeroU8::new(11).unwrap(),
             seg2: NonZeroU8::new(4).unwrap(),
             sync_jump_width: NonZeroU8::new(4).unwrap(),
+            transceiver_delay_compensation: false,
+            tdc_offset: 0,
+            tdc_filter_window_length: 0,
         }
     }
 }
