@@ -62,6 +62,7 @@ impl Default for NominalBitTiming {
 
 /// Configures the data bit timings for the FdCan Variable Bitrates.
 /// This is not used when frame_transmit is set to anything other than AllowFdCanAndBRS.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug)]
 pub struct DataBitTiming {
     ///  The value by which the oscillator frequency is divided to generate the bit time quanta. The bit

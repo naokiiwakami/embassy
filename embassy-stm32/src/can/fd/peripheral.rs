@@ -385,6 +385,7 @@ impl Registers {
         });
 
         self.set_data_bit_timing(config.dbtr);
+        self.set_transmitter_delay_compensation(config.dbtr);
         self.set_nominal_bit_timing(config.nbtr);
         self.set_automatic_retransmit(config.automatic_retransmit);
         self.set_transmit_pause(config.transmit_pause);
@@ -444,18 +445,20 @@ impl Registers {
     /// This is not used when frame_transmit is set to anything other than AllowFdCanAndBRS.
     #[inline]
     pub fn set_data_bit_timing(&self, btr: DataBitTiming) {
-        if btr.transceiver_delay_compensation {
-            self.regs.tdcr().write(|w| {
-                w.set_tdco(btr.tdco());
-                w.set_tdcf(btr.tdcf());
-            });
-        }
         self.regs.dbtp().write(|w| {
             w.set_dbrp(btr.dbrp() - 1);
             w.set_dtseg1(btr.dtseg1() - 1);
             w.set_dtseg2(btr.dtseg2() - 1);
             w.set_dsjw(btr.dsjw() - 1);
             w.set_tdc(btr.transceiver_delay_compensation);
+        });
+    }
+
+    #[inline]
+    pub fn set_transmitter_delay_compensation(&self, btr: DataBitTiming) {
+        self.regs.tdcr().write(|w| {
+            w.set_tdco(btr.tdco());
+            w.set_tdcf(btr.tdcf());
         });
     }
 
